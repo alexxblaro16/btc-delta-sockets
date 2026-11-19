@@ -11,10 +11,17 @@ import { useDeltaStream } from './stream/useDeltaStream.js';
 
 const REPO = 'https://github.com/alexxblaro16/btc-delta-sockets';
 const LESSON = 'https://ruvebal.github.io/web-atelier-udit/lessons/en/feii/unit-10-iot-python-backend/';
+const THEMES = [
+  { id: 'orange', label: 'Naranja' },
+  { id: 'blue', label: 'Azul' },
+  { id: 'violet', label: 'Violeta' },
+  { id: 'green', label: 'Verde' },
+];
 
 export default function App() {
   const [market, setMarket] = useState('BTC-USD');
   const [source, setSource] = useState('coinbase');
+  const [theme, setTheme] = useState('orange');
   const stream = useDeltaStream({ source, market });
   const { currency, label } = MARKETS[market];
   const canLocal = localAllowed();
@@ -27,6 +34,10 @@ export default function App() {
     const price = stream.frame?.readings?.price;
     document.title = price ? `${Math.round(price).toLocaleString('es-ES')} ${currency === 'EUR' ? '€' : '$'} · Bitcoin en directo` : 'Bitcoin en directo';
   }, [stream.frame?.readings?.price, currency]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   return (
     <div className="page">
@@ -61,6 +72,21 @@ export default function App() {
               ))}
             </select>
           </label>
+          <div className="theme-picker" role="group" aria-label="Tema de color">
+            <span className="theme-picker__label">Tema</span>
+            {THEMES.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                className={`theme-button theme-button--${id}`}
+                aria-label={`Tema ${label}`}
+                aria-pressed={theme === id}
+                onClick={() => setTheme(id)}
+              >
+                <span className="theme-swatch" aria-hidden="true" />
+              </button>
+            ))}
+          </div>
         </div>
       </header>
       <p className="source-hint muted small">{SOURCES[source].hint}</p>

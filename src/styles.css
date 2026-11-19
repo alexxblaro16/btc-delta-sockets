@@ -572,7 +572,12 @@ body {
   width: 58px;
   height: 58px;
   border: 1px solid rgba(255, 255, 255, 0.22);
-  background: linear-gradient(145deg, #ffc06d, #f7931a 56%, #d56808);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--accent) 78%, white),
+    var(--accent) 56%,
+    color-mix(in srgb, var(--accent) 66%, black)
+  );
   box-shadow:
     0 0 0 7px color-mix(in srgb, var(--accent) 11%, transparent),
     0 12px 30px color-mix(in srgb, var(--accent) 22%, transparent),
@@ -598,6 +603,112 @@ body {
   background: color-mix(in srgb, var(--panel) 76%, transparent);
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
   backdrop-filter: blur(18px);
+}
+
+.theme-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+}
+
+.theme-picker__label {
+  margin-right: 2px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.theme-button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+}
+
+.theme-button:hover:not(:disabled) {
+  transform: scale(1.08);
+  box-shadow: none;
+}
+
+.theme-button[aria-pressed='true'] {
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--panel) 70%, transparent);
+}
+
+.theme-swatch {
+  width: 15px;
+  height: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.36);
+  border-radius: 50%;
+  background: var(--swatch);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.25), 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.theme-button--orange {
+  --swatch: #ff9f35;
+}
+
+.theme-button--blue {
+  --swatch: #54b7ff;
+}
+
+.theme-button--violet {
+  --swatch: #ba91ff;
+}
+
+.theme-button--green {
+  --swatch: #63d79a;
+}
+
+:root[data-theme='blue'] {
+  --bg: #071321;
+  --bg-2: #0e2032;
+  --panel: rgba(15, 30, 48, 0.9);
+  --line: rgba(138, 190, 235, 0.16);
+  --text: #eff7ff;
+  --muted: #9aadc1;
+  --accent: #54b7ff;
+  --up: #4ade9a;
+  --down: #ff7184;
+  --warn: #ffd079;
+  --chart: #78c8ff;
+  color-scheme: dark;
+}
+
+:root[data-theme='violet'] {
+  --bg: #110c1c;
+  --bg-2: #21162f;
+  --panel: rgba(31, 22, 44, 0.9);
+  --line: rgba(190, 160, 230, 0.16);
+  --text: #faf5ff;
+  --muted: #b3a5c5;
+  --accent: #ba91ff;
+  --up: #50d9ac;
+  --down: #ff7789;
+  --warn: #ffd280;
+  --chart: #c4a4ff;
+  color-scheme: dark;
+}
+
+:root[data-theme='green'] {
+  --bg: #08140f;
+  --bg-2: #112319;
+  --panel: rgba(17, 31, 24, 0.9);
+  --line: rgba(150, 198, 167, 0.16);
+  --text: #eff8f1;
+  --muted: #9db3a3;
+  --accent: #63d79a;
+  --up: #56e69f;
+  --down: #ff7685;
+  --warn: #ffca70;
+  --chart: #77e6aa;
+  color-scheme: dark;
 }
 
 .segmented {
@@ -1018,6 +1129,14 @@ button.ghost {
     gap: 8px;
     padding: 6px;
     border-radius: 15px;
+  }
+
+  .theme-picker {
+    flex-basis: 100%;
+    justify-content: flex-end;
+    padding: 8px 4px 2px;
+    border-top: 1px solid var(--line);
+    border-left: 0;
   }
 
   .segmented label {
