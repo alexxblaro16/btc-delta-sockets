@@ -49,8 +49,12 @@ def test_stream_starts_with_a_snapshot_and_continues_in_order(client):
     assert messages[0]["kind"] == "snapshot"
     assert messages[0]["market"] == "BTC-EUR"
     seqs = [m["sequence"] for m in messages]
+    prices = [(m.get("readings") or m["patch"]).get("price") for m in messages]
     # El primero puede ser la instantánea del momento; después, uno a uno sin huecos.
     assert all(b == a + 1 for a, b in zip(seqs[1:], seqs[2:]))
+    # Solo se envía cuando cambia la cotización: cada mensaje trae un precio distinto del anterior.
+    assert all(p is not None for p in prices[1:])
+    assert all(a != b for a, b in zip(prices[1:], prices[2:]))
     for m in messages:
         if m["kind"] == "delta":
             assert set(m["patch"]) <= READING_FIELDS

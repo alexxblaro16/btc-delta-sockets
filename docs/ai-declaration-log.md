@@ -16,5 +16,6 @@ Flujo de la Unidad 6: cada diff hecho con ayuda de IA se apunta como ACCEPT o RE
 | 8 | 19/11/2026 | `backend/main.py` | Servidor FastAPI con hub por mercado y secuencia compartida | ACCEPT con cambios | `GET` daba 500: usaba el reloj de asyncio en un endpoint síncrono. Se cambió a `time.monotonic()` y se añadió una prueba |
 | 9 | 19/11/2026 | `backend/tests/test_api.py` | Prueba de contrato de los campos de la trama | ACCEPT | 13 pruebas de pytest en verde |
 | 10 | 19/11/2026 | `src/components/*`, `styles.css` | Interfaz: precio con destello, gráfica SVG, inspector de tramas, prueba de estudio, tema claro y oscuro | ACCEPT | Revisado en el navegador con datos reales; `prefers-reduced-motion` quita animaciones |
+| 11 | 19/11/2026 | `deltaEncoder.js`, `delta.py`, `sources.js`, `main.py` | La primera versión seguía la lección al pie de la letra: un tick fijo cada 0,5 s con deltas vacíos | REJECT (del tick fijo) | El enunciado del workshop pide enviar solo cuando cambie la cotización. Se cambió a envío por cambio de precio, sin temporizador; pruebas nuevas en los dos lados |
 
 Revisión humana tras la revisión de la IA: pendiente de la PR / entrega.

@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 from delta import DeltaEncoder, diff_readings
@@ -17,11 +18,15 @@ def test_first_message_is_a_full_snapshot_then_deltas():
     assert second["patch"] == {"price": 101, "bid": 100, "ask": 102}
 
 
-def test_empty_delta_still_advances_the_sequence():
+def test_nothing_is_sent_while_the_price_does_not_change():
     enc = DeltaEncoder("BTC-USD", "test")
     enc.next(r(100))
-    same = enc.next(r(100))
-    assert same["kind"] == "delta" and same["patch"] == {} and same["sequence"] == 2
+    assert enc.next(r(100)) is None
+    assert enc.next(r(100, volume24h=9)) is None
+    assert enc.skipped == 2
+    nxt = enc.next(r(101, volume24h=9))
+    assert nxt["kind"] == "delta" and nxt["sequence"] == 2
+    assert nxt["patch"] == {"price": 101, "bid": 100, "ask": 102, "volume24h": 9}
 
 
 def test_keyframe_every_eighth_tick():
@@ -35,7 +40,7 @@ def test_folding_the_messages_rebuilds_the_reading():
     frame = None
     last = None
     for i in range(30):
-        last = r(100 + (i % 7), volume24h=5 + i)
+        last = r(100 + i * 3 + (i % 2), volume24h=5 + i)
         msg = enc.next(last)
         if msg["kind"] == "snapshot":
             frame = dict(msg["readings"])
@@ -77,9 +82,8 @@ def test_online_reflects_how_fresh_the_exchange_data_is():
     # Se consulta desde un endpoint síncrono (hilo sin bucle de eventos): no puede depender de asyncio.
     hub = MarketHub("BTC-USD", source="coinbase")
     assert hub.current() is None
-    hub.latest = r(100)
     hub.upstream_at = time.monotonic()
-    hub.tick()
+    asyncio.run(hub.publish(r(100)))
     assert hub.current()["online"] is True
     hub.upstream_at = time.monotonic() - 60
     assert hub.current()["online"] is False

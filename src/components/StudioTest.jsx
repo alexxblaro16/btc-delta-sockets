@@ -5,7 +5,6 @@ export default function StudioTest({ stream }) {
     ['Tramas', stats.messages],
     ['Instantáneas', stats.snapshots],
     ['Deltas', stats.deltas],
-    ['Deltas vacíos', stats.emptyDeltas],
     ['Perdidos a propósito', stats.dropped],
     ['Huecos detectados', stats.gaps],
     ['Reconexiones', stats.reconnects],

@@ -8,11 +8,11 @@ Mismo contrato en las tres fuentes (Coinbase en el navegador, servidor FastAPI y
 |---|---|---|
 | `GET` | `/v1/markets` | Mercados disponibles (`btc-usd`, `btc-eur`) |
 | `GET` | `/v1/markets/{market}` | Una trama: la instantánea del momento (503 si aún no hay datos, 404 si el mercado no existe) |
-| `WS` | `/v1/markets/{market}/stream` | Instantánea al conectar y después un mensaje cada 0,5 s |
+| `WS` | `/v1/markets/{market}/stream` | Instantánea al conectar y después un mensaje **solo cuando cambia la cotización** |
 
 ## Mensajes
 
-**Instantánea** (la primera de cada conexión y cada 8 ticks):
+**Instantánea** (la primera de cada conexión y cada 8 mensajes):
 
 ```json
 {
@@ -30,7 +30,7 @@ Mismo contrato en las tres fuentes (Coinbase en el navegador, servidor FastAPI y
 }
 ```
 
-**Delta** (solo los campos que cambian):
+**Delta** (solo los campos que han cambiado desde el último envío):
 
 ```json
 { "kind": "delta", "market": "BTC-USD", "source": "coinbase", "online": true,
@@ -40,7 +40,8 @@ Mismo contrato en las tres fuentes (Coinbase en el navegador, servidor FastAPI y
 
 ## Reglas
 
-- `sequence` sube de uno en uno en cada tick, también cuando el `patch` va vacío (así se sabe que el canal sigue vivo).
+- **El socket no envía de forma continua: solo manda un mensaje cuando cambia la cotización (el precio).** Si llega un tick del exchange con el mismo precio, no se envía nada; los demás datos que hayan cambiado (volumen, bid...) viajan en el siguiente delta.
+- `sequence` sube de uno en uno con cada mensaje enviado.
 - El cliente solo acepta un delta si `sequence === anterior + 1`. Si hay un hueco, lo rechaza, **mantiene la última trama buena** y espera a la siguiente instantánea.
 - `online: false` significa que el servidor sigue vivo pero el exchange lleva más de 10 s sin mandar datos.
 - Los números van como números (no como texto, que es como los manda Coinbase).

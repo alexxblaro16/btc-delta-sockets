@@ -4,11 +4,11 @@
 //   open({ market, onOpen, onMessage, onClose }) -> { close() }
 //
 // - coinbase:  feed público de Coinbase Exchange (wss://, funciona en GitHub Pages).
-//              El navegador recibe ticks completos y los convierte en instantánea + deltas.
+//              El navegador recibe cada tick y emite un mensaje solo si cambió el precio.
 // - local:     servidor FastAPI de backend/ (ws://127.0.0.1:8000). Ya envía el contrato.
 // - simulated: paseo aleatorio en el propio navegador, para trabajar sin red.
 
-import { COINBASE_WS_URL, MARKETS, TICK_MS, localStreamUrl } from './contract.js';
+import { COINBASE_WS_URL, MARKETS, localStreamUrl } from './contract.js';
 import { createDeltaEncoder } from './deltaEncoder.js';
 
 const num = (v) => (v === undefined || v === null || v === '' ? null : Number(v));
@@ -29,18 +29,11 @@ export function readingsFromCoinbase(t) {
 function coinbase({ market, onOpen, onMessage, onClose }) {
   const ws = new WebSocket(COINBASE_WS_URL);
   const encoder = createDeltaEncoder({ market, source: 'coinbase' });
-  let latest = null;
-  let timer = null;
   let closed = false;
 
   ws.onopen = () => {
     ws.send(JSON.stringify({ type: 'subscribe', product_ids: [market], channels: ['ticker'] }));
     onOpen();
-    // El ritmo lo marca el tick, no el exchange: así llega una trama cada medio
-    // segundo aunque Coinbase mande veinte ticks seguidos o ninguno.
-    timer = setInterval(() => {
-      if (latest) onMessage(encoder.next(latest));
-    }, TICK_MS);
   };
   ws.onmessage = (event) => {
     let data;
@@ -49,10 +42,12 @@ function coinbase({ market, onOpen, onMessage, onClose }) {
     } catch {
       return;
     }
-    if (data.type === 'ticker' && data.product_id === market) latest = readingsFromCoinbase(data);
+    if (data.type !== 'ticker' || data.product_id !== market) return;
+    // Solo sale un mensaje si la cotización cambió: sin ritmo fijo.
+    const message = encoder.next(readingsFromCoinbase(data));
+    if (message) onMessage(message);
   };
   ws.onclose = () => {
-    clearInterval(timer);
     if (!closed) onClose();
   };
   ws.onerror = () => ws.close();
@@ -60,7 +55,6 @@ function coinbase({ market, onOpen, onMessage, onClose }) {
   return {
     close() {
       closed = true;
-      clearInterval(timer);
       ws.close();
     },
     /** Corta la conexión como si se cayera la red (para la prueba de estudio). */
@@ -104,23 +98,27 @@ function simulated({ market, onOpen, onMessage, onClose }) {
   const r = { price: open24h, open24h, high24h: open24h * 1.012, low24h: open24h * 0.987, volume24h: 8123.4 };
   let closed = false;
   let timer = null;
+  // Como un mercado de verdad: los cambios llegan a ratos (entre 0,2 y 2,5 s),
+  // y algunos ticks repiten precio y no se envían.
+  const tick = () => {
+    if (Math.random() < 0.8) {
+      r.price = Math.round((r.price + (Math.random() - 0.5) * r.price * 0.0009) * 100) / 100;
+      r.high24h = Math.max(r.high24h, r.price);
+      r.low24h = Math.min(r.low24h, r.price);
+      r.volume24h = Math.round((r.volume24h + Math.random() * 0.8) * 1000) / 1000;
+    }
+    const spread = Math.round(r.price * 0.00002 * 100) / 100 || 0.01;
+    const message = encoder.next({ ...r, bid: Math.round((r.price - spread) * 100) / 100, ask: Math.round((r.price + spread) * 100) / 100 });
+    if (message) onMessage(message);
+    timer = setTimeout(tick, 200 + Math.random() * 2300);
+  };
   const start = setTimeout(() => {
     onOpen();
-    timer = setInterval(() => {
-      // Algunos ticks no cambian nada (delta vacío): el canal sigue vivo.
-      if (Math.random() < 0.75) {
-        r.price = Math.round((r.price + (Math.random() - 0.5) * r.price * 0.0009) * 100) / 100;
-        r.high24h = Math.max(r.high24h, r.price);
-        r.low24h = Math.min(r.low24h, r.price);
-        r.volume24h = Math.round((r.volume24h + Math.random() * 0.8) * 1000) / 1000;
-      }
-      const spread = Math.round(r.price * 0.00002 * 100) / 100 || 0.01;
-      onMessage(encoder.next({ ...r, bid: Math.round((r.price - spread) * 100) / 100, ask: Math.round((r.price + spread) * 100) / 100 }));
-    }, TICK_MS);
+    tick();
   }, 250);
   const stop = () => {
     clearTimeout(start);
-    clearInterval(timer);
+    clearTimeout(timer);
   };
   return {
     close() {
@@ -138,7 +136,7 @@ export const SOURCES = {
   coinbase: {
     id: 'coinbase',
     label: 'Coinbase en directo',
-    hint: 'Feed público de Coinbase Exchange. El navegador lo convierte en instantánea + deltas.',
+    hint: 'Feed público de Coinbase Exchange. Solo se emite un mensaje cuando cambia la cotización: instantánea al empezar y después deltas.',
     open: coinbase,
   },
   local: {
@@ -150,7 +148,7 @@ export const SOURCES = {
   simulated: {
     id: 'simulated',
     label: 'Simulado',
-    hint: 'Paseo aleatorio en el navegador, para trabajar sin red.',
+    hint: 'Datos simulados (mock) en el navegador: el precio cambia a ratos y solo entonces llega un mensaje.',
     open: simulated,
   },
 };

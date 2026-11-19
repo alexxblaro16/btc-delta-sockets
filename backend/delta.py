@@ -1,8 +1,9 @@
 """Codificador de deltas: el mismo algoritmo que src/stream/deltaEncoder.js.
 
-En cada tick recibe la lectura completa y decide qué mandar: la primera vez y
-cada KEYFRAME_EVERY ticks una instantánea completa; el resto, un delta solo con
-los campos que han cambiado (vacío si no cambia nada: la secuencia avanza igual).
+Recibe cada lectura completa del exchange y solo genera un mensaje si ha
+cambiado la cotización (el precio): nada de envíos continuos. El primer mensaje
+y cada KEYFRAME_EVERY mensajes van como instantánea completa; el resto, como
+delta con los campos que han cambiado desde el último envío.
 """
 
 from __future__ import annotations
@@ -47,6 +48,7 @@ class DeltaEncoder:
         self.now = now
         self.sequence = 0
         self.last: Readings | None = None
+        self.skipped = 0  # ticks con el mismo precio que no se enviaron
 
     def _base(self, online: bool) -> dict[str, Any]:
         return {
@@ -57,8 +59,11 @@ class DeltaEncoder:
             "timestamp": self.now(),
         }
 
-    def next(self, readings: Readings, online: bool = True) -> dict[str, Any]:
-        """Siguiente mensaje (instantánea o delta) para la lectura completa."""
+    def next(self, readings: Readings, online: bool = True) -> dict[str, Any] | None:
+        """Mensaje (instantánea o delta) para la lectura, o None si la cotización no ha cambiado."""
+        if self.last is not None and self.last.get("price") == readings.get("price"):
+            self.skipped += 1
+            return None
         self.sequence += 1
         keyframe = self.last is None or self.sequence % self.keyframe_every == 0
         if keyframe:

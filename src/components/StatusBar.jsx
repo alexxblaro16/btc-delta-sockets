@@ -12,7 +12,8 @@ export default function StatusBar({ stream }) {
   const { status, frame, age, retryIn, attempt, awaitingKeyframe } = stream;
   let detail = '';
   if (status === 'live' && frame) detail = `actualizado ${clock(frame.timestamp)}`;
-  if (status === 'stale' && age != null) detail = `sin datos desde hace ${seconds(age)} · se muestra la última trama buena`;
+  if (status === 'live' && age != null && age > 2000) detail = `cotización sin cambios desde hace ${seconds(age)}`;
+  if (status === 'stale' && age != null) detail = `ningún cambio desde hace ${seconds(age)} · puede haber un problema; se muestra la última trama buena`;
   if (status === 'reconnecting')
     detail = retryIn != null ? `intento ${attempt} en ${seconds(retryIn)} · se muestra la última trama buena` : 'abriendo…';
 

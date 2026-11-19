@@ -63,14 +63,16 @@ describe('useDeltaStream', () => {
     expect(result.current.changed).toEqual(expect.arrayContaining(['price', 'bid', 'ask']));
   });
 
-  it('marca los datos como atrasados si dejan de llegar', () => {
+  it('avisa si la cotización lleva demasiado sin cambiar (15 s), pero no antes', () => {
     const { result } = renderHook(() => useDeltaStream({ source: 'fake', market: 'BTC-USD' }));
     const enc = createDeltaEncoder({ market: 'BTC-USD', source: 'fake' });
     act(() => {
       fake.current.onOpen();
       fake.current.onMessage(enc.next(reading(100)));
     });
-    act(() => vi.advanceTimersByTime(4000));
+    act(() => vi.advanceTimersByTime(10000));
+    expect(result.current.status).toBe('live'); // un mercado quieto unos segundos no es un fallo
+    act(() => vi.advanceTimersByTime(6000));
     expect(result.current.status).toBe('stale');
     expect(result.current.frame.readings.price).toBe(100); // la última trama buena sigue
   });

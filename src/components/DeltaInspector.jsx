@@ -4,7 +4,7 @@ export default function DeltaInspector({ log }) {
     <section className="panel" aria-labelledby="inspector-title">
       <h2 id="inspector-title">Tramas recibidas</h2>
       <p className="muted small">
-        Una <b>instantánea</b> trae todos los campos; un <b>delta</b>, solo los que cambian. Un delta vacío también avanza la secuencia: demuestra que el canal sigue vivo.
+        Solo llega un mensaje cuando cambia la cotización. Una <b>instantánea</b> trae todos los campos; un <b>delta</b>, solo los que han cambiado.
       </p>
       {log.length === 0 ? (
         <p className="muted">Todavía no ha llegado ninguna.</p>

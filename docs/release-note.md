@@ -1,17 +1,26 @@
 # Nota de versión — v1.0.0 (19/11/2026)
 
-Panel de React que muestra la cotización de Bitcoin en directo por WebSocket con el patrón de la Unidad 10: **una instantánea y después solo deltas**, con número de secuencia.
+Panel de React que muestra la cotización de Bitcoin en tiempo real por WebSocket con el patrón de la Unidad 10: **una instantánea y después solo deltas**, con número de secuencia. **El socket solo envía un valor cuando cambia la cotización, no de forma continua.**
 
 ## Qué hay
 
 - **Tres fuentes con el mismo contrato** ([docs/contract.md](contract.md)):
-  - *Coinbase en directo*: el navegador abre el feed público `wss://ws-feed.exchange.coinbase.com` y convierte cada tick en instantánea + deltas (`src/stream/deltaEncoder.js`). Es la que funciona en GitHub Pages.
-  - *Servidor FastAPI local*: `backend/main.py` escucha Coinbase y reparte instantánea + deltas con una secuencia compartida por todos los clientes. Solo desde `http://localhost`, porque una página HTTPS no puede abrir `ws://`.
-  - *Simulado*: paseo aleatorio en el navegador, para trabajar sin red.
+  - *Coinbase en directo* (servidor real de cripto): el navegador abre el feed público `wss://ws-feed.exchange.coinbase.com` y, con cada tick, emite un mensaje solo si el precio ha cambiado (`src/stream/deltaEncoder.js`). Es la que funciona en GitHub Pages.
+  - *Servidor FastAPI local*: `backend/main.py` escucha Coinbase y, cuando cambia el precio, reparte el delta a todos los clientes con una secuencia compartida. Solo desde `http://localhost`, porque una página HTTPS no puede abrir `ws://`.
+  - *Simulado* (mock): el precio cambia a ratos (entre 0,2 y 2,5 s) y solo entonces llega un mensaje. Para trabajar sin red.
 - **Plegado** (`src/stream/reduce.js`): la instantánea sustituye; el delta se mezcla solo si la secuencia es la anterior + 1. Un hueco se rechaza y se queda la última trama buena.
 - **Ciclo de vida completo** (`src/stream/useDeltaStream.js`): conectar, reconectar si se cae y `close()` al desmontar o al cambiar de mercado o fuente.
-- **Estados visibles**: *En directo*, *Datos atrasados* (más de 3 s sin tramas), *Reconectando* (con el intento y la cuenta atrás) y aviso de *hueco en la secuencia*.
-- **Prueba de estudio en la propia página**: «Cortar la conexión» y «Perder el siguiente delta», con contadores de tramas, instantáneas, deltas, deltas vacíos, huecos y reconexiones, y un inspector con las últimas tramas.
+- **Estados visibles**: *En directo* (con «cotización sin cambios desde hace X s» si el mercado está quieto), *Datos atrasados* (15 s sin ningún cambio, que en Bitcoin es raro), *Reconectando* (con el intento y la cuenta atrás) y aviso de *hueco en la secuencia*.
+- **Prueba de estudio en la propia página**: «Cortar la conexión» y «Perder el siguiente delta», con contadores de tramas, instantáneas, deltas, huecos y reconexiones, y un inspector con las últimas tramas.
+
+## Solo cuando cambia la cotización
+
+El enunciado pide que el socket envíe un valor cuando cambie la cotización y no de forma continua. Por eso:
+
+- Ni el navegador ni el servidor tienen un temporizador que envíe cada X segundos: el envío lo dispara la llegada de un tick del exchange **con un precio distinto** del último enviado.
+- Un tick con el mismo precio no sale por el socket (se cuenta en `skipped`); lo que haya cambiado mientras tanto (volumen, bid, ask) viaja en el siguiente delta.
+- La secuencia avanza una vez por mensaje enviado, así que los huecos siguen detectándose.
+- Como un mercado quieto no manda nada, «datos atrasados» no se marca a los 3 s sino a los 15 s sin ningún cambio, y hasta entonces se muestra «cotización sin cambios desde hace X s».
 
 ## Estrategia de reconexión
 
@@ -38,7 +47,7 @@ Copiada de `GET http://127.0.0.1:8000/v1/markets/btc-usd` el 19/11/2026 a las 17
 
 ## Comprobado
 
-- 23 pruebas del front (Vitest) y 13 del backend (pytest), linter y build.
+- 23 pruebas del front (Vitest) y 13 del backend (pytest), linter y build. Hay pruebas específicas de que con el mismo precio no se envía nada, en los dos lados, y de que en el flujo real cada mensaje trae un precio distinto del anterior.
 - En el navegador con Coinbase real: precio, gráfica, deltas aplicados, «Perder el siguiente delta» (hueco detectado y curado con la instantánea) y «Cortar la conexión» (pasa a *Reconectando*, mantiene la última trama y vuelve sola).
 - Fuente del servidor FastAPI local contra Coinbase real.
 

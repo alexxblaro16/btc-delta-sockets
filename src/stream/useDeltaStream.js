@@ -26,7 +26,7 @@ export const initialState = {
   changed: [],
   awaitingKeyframe: false,
   lastMessageAt: null,
-  stats: { messages: 0, snapshots: 0, deltas: 0, emptyDeltas: 0, gaps: 0, dropped: 0, reconnects: 0 },
+  stats: { messages: 0, snapshots: 0, deltas: 0, gaps: 0, dropped: 0, reconnects: 0 },
 };
 
 export function streamReducer(state, action) {
@@ -45,10 +45,8 @@ export function streamReducer(state, action) {
       const { msg, at } = action;
       const { frame, accepted, reason } = applyFrame(state.frame, msg);
       const stats = { ...state.stats, messages: state.stats.messages + 1 };
-      if (msg.kind === 'delta') {
-        stats.deltas += 1;
-        if (accepted && Object.keys(msg.patch ?? {}).length === 0) stats.emptyDeltas += 1;
-      } else stats.snapshots += 1;
+      if (msg.kind === 'delta') stats.deltas += 1;
+      else stats.snapshots += 1;
       if (reason === 'gap') stats.gaps += 1;
       const status = accepted ? 'aplicado' : reason === 'gap' ? 'rechazado (hueco)' : 'rechazado';
       const log = [{ ...summary(msg), status }, ...state.log].slice(0, MAX_LOG);

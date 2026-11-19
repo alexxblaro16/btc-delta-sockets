@@ -15,16 +15,17 @@ describe('createDeltaEncoder', () => {
     expect(second).toMatchObject({ kind: 'delta', sequence: 2, patch: { price: 101, bid: 100, ask: 102 } });
   });
 
-  it('si nada cambia, el delta va vacío pero la secuencia avanza', () => {
+  it('si la cotización no cambia, no se envía nada (ni siquiera si cambia otro dato)', () => {
     const enc = createDeltaEncoder({ market: 'BTC-USD', source: 'test' });
     enc.next(r(100));
-    const same = enc.next(r(100));
-    expect(same.kind).toBe('delta');
-    expect(same.patch).toEqual({});
-    expect(same.sequence).toBe(2);
+    expect(enc.next(r(100))).toBeNull();
+    expect(enc.next(r(100, { volume24h: 9 }))).toBeNull();
+    expect(enc.skipped).toBe(2);
+    // El siguiente cambio de precio sigue la secuencia sin huecos y trae todo lo cambiado desde el último envío.
+    expect(enc.next(r(101, { volume24h: 9 }))).toMatchObject({ kind: 'delta', sequence: 2, patch: { price: 101, bid: 100, ask: 102, volume24h: 9 } });
   });
 
-  it('cada 8 ticks manda una instantánea de nuevo', () => {
+  it('cada 8 mensajes manda una instantánea de nuevo', () => {
     const enc = createDeltaEncoder({ market: 'BTC-USD', source: 'test' });
     const kinds = Array.from({ length: 17 }, (_, i) => enc.next(r(100 + i)).kind);
     expect(kinds[0]).toBe('snapshot');
@@ -38,7 +39,7 @@ describe('createDeltaEncoder', () => {
     let frame = null;
     let last;
     for (let i = 0; i < 30; i += 1) {
-      last = r(100 + Math.round(Math.sin(i) * 10), { volume24h: 5 + i * 0.1 });
+      last = r(100 + i * 3 + Math.round(Math.sin(i) * 2), { volume24h: 5 + i * 0.1 });
       frame = applyFrame(frame, enc.next(last)).frame;
     }
     expect(frame.readings).toEqual(last);

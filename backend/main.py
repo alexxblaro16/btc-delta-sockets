@@ -6,9 +6,10 @@ Sigue el patrón de la Unidad 10 (FastAPI + WebSocket):
     GET /v1/markets/{market}              una trama (instantánea) del momento
     WS  /v1/markets/{market}/stream       instantánea al conectar y después deltas
 
+El socket solo envía algo CUANDO CAMBIA LA COTIZACIÓN, no de forma continua.
 Un solo proceso escucha el feed público de Coinbase y comparte una secuencia
 para todos los clientes: el que llega a mitad recibe la instantánea actual y
-después los mismos ticks que los demás. Cada KEYFRAME_EVERY ticks va una
+después los mismos mensajes que los demás. Cada KEYFRAME_EVERY mensajes va una
 instantánea completa para curar a quien perdió un delta.
 
 Si no hay red (o con BTC_SOURCE=simulated) usa un paseo aleatorio, y el campo
@@ -37,7 +38,9 @@ log = logging.getLogger("btc")
 
 COINBASE_WS = "wss://ws-feed.exchange.coinbase.com"
 MARKETS = {"btc-usd": "BTC-USD", "btc-eur": "BTC-EUR"}
-TICK_SECONDS = float(os.getenv("BTC_TICK_SECONDS", "0.5"))
+# El simulador cambia el precio a ratos, entre estos dos tiempos (segundos).
+SIM_MIN_SECONDS = float(os.getenv("BTC_SIM_MIN_SECONDS", "0.2"))
+SIM_MAX_SECONDS = float(os.getenv("BTC_SIM_MAX_SECONDS", "2.5"))
 SOURCE = os.getenv("BTC_SOURCE", "coinbase")  # "coinbase" o "simulated"
 UPSTREAM_STALE_SECONDS = 10
 
@@ -75,7 +78,7 @@ class Simulator:
 
     def step(self) -> Readings:
         r = self.r
-        if self.rng.random() < 0.75:  # algunos ticks no cambian nada: delta vacío
+        if self.rng.random() < 0.8:  # algunos ticks repiten precio: no se envían
             r["price"] = round(r["price"] + (self.rng.random() - 0.5) * r["price"] * 0.0009, 2)
             r["high24h"] = max(r["high24h"], r["price"])
             r["low24h"] = min(r["low24h"], r["price"])
@@ -102,12 +105,13 @@ class MarketHub:
             return True
         return time.monotonic() - self.upstream_at < UPSTREAM_STALE_SECONDS
 
-    def tick(self) -> dict[str, Any] | None:
-        if self.source == "simulated":
-            self.latest = self.simulator.step()
-        if self.latest is None:
-            return None
-        return self.encoder.next(self.latest, online=self.online)
+    async def publish(self, readings: Readings) -> dict[str, Any] | None:
+        """Guarda la lectura y, solo si cambió la cotización, la reparte a todos."""
+        self.latest = readings
+        message = self.encoder.next(readings, online=self.online)
+        if message:
+            await self.broadcast(message)
+        return message
 
     def current(self) -> dict[str, Any] | None:
         return self.encoder.snapshot(online=self.online) if self.latest is not None else None
@@ -139,8 +143,8 @@ async def follow_coinbase(hubs: dict[str, MarketHub]) -> None:
                     data = json.loads(raw)
                     hub = by_product.get(data.get("product_id"))
                     if data.get("type") == "ticker" and hub:
-                        hub.latest = readings_from_coinbase(data)
                         hub.upstream_at = time.monotonic()
+                        await hub.publish(readings_from_coinbase(data))
         except asyncio.CancelledError:
             raise
         except Exception as exc:  # sin red, corte del exchange...
@@ -149,13 +153,11 @@ async def follow_coinbase(hubs: dict[str, MarketHub]) -> None:
             delay = min(delay * 2, 15.0)
 
 
-async def ticker_loop(hubs: dict[str, MarketHub]) -> None:
+async def simulate(hub: MarketHub) -> None:
+    """Datos simulados (mock): el precio cambia a ratos y solo entonces se envía."""
     while True:
-        for hub in hubs.values():
-            message = hub.tick()
-            if message:
-                await hub.broadcast(message)
-        await asyncio.sleep(TICK_SECONDS)
+        await hub.publish(hub.simulator.step())
+        await asyncio.sleep(hub.simulator.rng.uniform(SIM_MIN_SECONDS, SIM_MAX_SECONDS))
 
 
 def create_app(source: str = SOURCE) -> FastAPI:
@@ -163,9 +165,10 @@ def create_app(source: str = SOURCE) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
-        tasks = [asyncio.create_task(ticker_loop(hubs))]
         if source == "coinbase":
-            tasks.append(asyncio.create_task(follow_coinbase(hubs)))
+            tasks = [asyncio.create_task(follow_coinbase(hubs))]
+        else:
+            tasks = [asyncio.create_task(simulate(hub)) for hub in hubs.values()]
         yield
         for task in tasks:
             task.cancel()
