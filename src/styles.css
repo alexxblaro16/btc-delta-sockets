@@ -11,7 +11,7 @@
   --warn: #f5b942;
   --chart: var(--accent);
   --mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
-  --sans: 'Space Grotesk', system-ui, 'Segoe UI', sans-serif;
+  --sans: 'Manrope', system-ui, 'Segoe UI', sans-serif;
   color-scheme: dark;
 }
 
@@ -516,7 +516,7 @@ dd {
   --down: #ff6678;
   --warn: #ffc568;
   --chart: #ffad52;
-  --sans: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 @media (prefers-color-scheme: light) {
