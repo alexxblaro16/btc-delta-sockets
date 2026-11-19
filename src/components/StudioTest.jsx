@@ -1,29 +1,30 @@
+import { COPY } from '../i18n.js';
+
 /** Prueba de estudio de la lección: cortar la fuente y perder un delta a propósito. */
-export default function StudioTest({ stream }) {
+export default function StudioTest({ stream, language = 'es' }) {
+  const copy = COPY[language];
   const { stats, drop, loseNextDelta, retry, status } = stream;
   const counters = [
-    ['Tramas', stats.messages],
-    ['Instantáneas', stats.snapshots],
-    ['Deltas', stats.deltas],
-    ['Perdidos a propósito', stats.dropped],
-    ['Huecos detectados', stats.gaps],
-    ['Reconexiones', stats.reconnects],
+    [copy.counters.messages, stats.messages],
+    [copy.counters.snapshots, stats.snapshots],
+    [copy.counters.deltas, stats.deltas],
+    [copy.counters.dropped, stats.dropped],
+    [copy.counters.gaps, stats.gaps],
+    [copy.counters.reconnects, stats.reconnects],
   ];
   return (
     <section className="panel" aria-labelledby="studio-title">
-      <h2 id="studio-title">Prueba de estudio</h2>
-      <p className="muted small">
-        Corta la conexión: el panel pasa a «Reconectando», la frescura envejece y la última trama buena sigue en pantalla. Pierde un delta: el siguiente se rechaza por hueco y la próxima instantánea lo cura.
-      </p>
+      <h2 id="studio-title">{copy.studioTitle}</h2>
+      <p className="muted small">{copy.studioDescription}</p>
       <div className="actions">
         <button type="button" onClick={drop} disabled={status !== 'live' && status !== 'stale'}>
-          Cortar la conexión
+          {copy.cutConnection}
         </button>
         <button type="button" onClick={loseNextDelta} disabled={status !== 'live'}>
-          Perder el siguiente delta
+          {copy.loseDelta}
         </button>
         <button type="button" className="ghost" onClick={retry}>
-          Reconectar ya
+          {copy.reconnectNow}
         </button>
       </div>
       <dl className="counters">

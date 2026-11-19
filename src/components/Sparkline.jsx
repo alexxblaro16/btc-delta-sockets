@@ -1,19 +1,22 @@
 import { useId, useMemo } from 'react';
 import { clock, money } from '../format.js';
+import { COPY, LOCALES } from '../i18n.js';
 
 const W = 720;
 const H = 220;
 const PAD = { top: 16, right: 12, bottom: 22, left: 12 };
 
 /** Gráfica de los últimos minutos: una línea con relleno y el último punto marcado. */
-export default function Sparkline({ points, currency, label }) {
+export default function Sparkline({ points, currency, label, language = 'es' }) {
+  const copy = COPY[language];
+  const locale = LOCALES[language];
   const gradient = useId();
   const shape = useMemo(() => build(points), [points]);
 
   if (!shape) {
     return (
       <figure className="chart chart--empty">
-        <p className="muted">La gráfica aparece en cuanto llegan las primeras tramas.</p>
+        <p className="muted">{copy.chartEmpty}</p>
       </figure>
     );
   }
@@ -21,7 +24,7 @@ export default function Sparkline({ points, currency, label }) {
   const { line, area, last, min, max, first, end, up } = shape;
   return (
     <figure className="chart">
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${label}: de ${money(first.price, currency)} a ${money(end.price, currency)}, mínimo ${money(min, currency)} y máximo ${money(max, currency)}.`}>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`${label}: ${money(first.price, currency, locale)} → ${money(end.price, currency, locale)}, ${copy.chartMin} ${money(min, currency, locale)} ${copy.chartAnd} ${copy.chartMax} ${money(max, currency, locale)}.`}>
         <defs>
           <linearGradient id={gradient} x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor="var(--chart)" stopOpacity="0.35" />
@@ -34,13 +37,13 @@ export default function Sparkline({ points, currency, label }) {
         <path d={line} className={`chart__line ${up ? 'up' : 'down'}`} />
         <circle cx={last.x} cy={last.y} r="4.5" className="chart__dot" />
         <text x={W - PAD.right} y={PAD.top - 4} textAnchor="end" className="chart__label">
-          máx {money(max, currency)}
+          {copy.chartMax} {money(max, currency, locale)}
         </text>
         <text x={W - PAD.right} y={H - 6} textAnchor="end" className="chart__label">
-          mín {money(min, currency)}
+          {copy.chartMin} {money(min, currency, locale)}
         </text>
         <text x={PAD.left} y={H - 6} className="chart__label">
-          {clock(new Date(first.t).toISOString())}
+          {clock(new Date(first.t).toISOString(), locale)}
         </text>
       </svg>
       <figcaption className="muted">{label}</figcaption>

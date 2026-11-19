@@ -20,7 +20,9 @@ Proyecto de la [Unidad 10 de Front End II (UDIT)](https://ruvebal.github.io/web-
   - *Perder el siguiente delta*: el delta siguiente se rechaza por hueco y la próxima instantánea lo cura.
   - Contadores de tramas, instantáneas, deltas, huecos y reconexiones.
 - **Inspector de tramas:** las últimas 14 tal como llegan (tipo, secuencia, contenido y si se aplicó o se rechazó).
-- Tema claro y oscuro según el sistema, sin animaciones si el sistema pide menos movimiento, y estado anunciado a lectores de pantalla.
+- Coinbase en directo como fuente predeterminada; el simulador sigue disponible como opción.
+- Siete temas seleccionables (naranja, azul, violeta, Noir, Cómic, Fuegos artificiales y Casino), además de rotación automática, selector español/inglés y firma del autor.
+- El tema naranja respeta el modo claro u oscuro del sistema; las animaciones se reducen según la preferencia del sistema y el estado se anuncia a lectores de pantalla.
 
 ## Cómo funciona
 

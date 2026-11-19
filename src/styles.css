@@ -662,8 +662,24 @@ body {
   --swatch: #ba91ff;
 }
 
-.theme-button--green {
-  --swatch: #63d79a;
+.theme-button--noir {
+  --swatch: #e4c36c;
+}
+
+.theme-button--comic {
+  --swatch: #ff4d6d;
+}
+
+.theme-button--fireworks {
+  --swatch: #ff67ca;
+}
+
+.theme-button--casino {
+  --swatch: #f2cf66;
+}
+
+.theme-button--cycle .theme-swatch {
+  background: conic-gradient(#ff9f35 0 15%, #54b7ff 15% 30%, #ba91ff 30% 45%, #e4c36c 45% 60%, #ff4d6d 60% 75%, #ff67ca 75% 88%, #f2cf66 88%);
 }
 
 :root[data-theme='blue'] {
@@ -696,19 +712,142 @@ body {
   color-scheme: dark;
 }
 
-:root[data-theme='green'] {
-  --bg: #08140f;
-  --bg-2: #112319;
-  --panel: rgba(17, 31, 24, 0.9);
-  --line: rgba(150, 198, 167, 0.16);
-  --text: #eff8f1;
-  --muted: #9db3a3;
-  --accent: #63d79a;
-  --up: #56e69f;
-  --down: #ff7685;
-  --warn: #ffca70;
-  --chart: #77e6aa;
+:root[data-theme='noir'] {
+  --bg: #0d0e11;
+  --bg-2: #191a1f;
+  --panel: rgba(24, 25, 30, 0.92);
+  --line: rgba(220, 196, 132, 0.17);
+  --text: #f5f2e9;
+  --muted: #aaa596;
+  --accent: #e4c36c;
+  --up: #84d8ad;
+  --down: #ee7780;
+  --warn: #f3cf72;
+  --chart: #e4c36c;
   color-scheme: dark;
+}
+
+:root[data-theme='comic'] {
+  --bg: #0b1020;
+  --bg-2: #141d35;
+  --panel: rgba(17, 26, 48, 0.92);
+  --line: rgba(99, 174, 255, 0.2);
+  --text: #f5f8ff;
+  --muted: #a7b6d0;
+  --accent: #ff4d6d;
+  --up: #59dfab;
+  --down: #ff7484;
+  --warn: #ffd15f;
+  --chart: #50c8ff;
+  color-scheme: dark;
+}
+
+:root[data-theme='fireworks'] {
+  --bg: #090b22;
+  --bg-2: #151737;
+  --panel: rgba(20, 22, 52, 0.91);
+  --line: rgba(156, 162, 255, 0.19);
+  --text: #f7f5ff;
+  --muted: #aaa9cb;
+  --accent: #ff67ca;
+  --up: #65e8c0;
+  --down: #ff788a;
+  --warn: #ffd574;
+  --chart: #76cfff;
+  color-scheme: dark;
+}
+
+:root[data-theme='casino'] {
+  --bg: #091711;
+  --bg-2: #13261b;
+  --panel: rgba(18, 36, 26, 0.92);
+  --line: rgba(228, 195, 108, 0.2);
+  --text: #f7f4e8;
+  --muted: #b1b19b;
+  --accent: #f2cf66;
+  --up: #56e2a0;
+  --down: #ff6977;
+  --warn: #ffdc7c;
+  --chart: #5de0b0;
+  color-scheme: dark;
+}
+
+.theme-picker {
+  flex-wrap: wrap;
+}
+
+.language-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-2) 85%, transparent);
+}
+
+.language-toggle button {
+  min-width: 35px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--muted);
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
+.language-toggle button[aria-pressed='true'] {
+  border-color: var(--line);
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+}
+
+.language-toggle button:hover:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+body::before {
+  content: '';
+  pointer-events: none;
+}
+
+:root[data-theme='fireworks'] body::before {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  opacity: 0.75;
+  background:
+    radial-gradient(ellipse at 18% 24%, rgba(255, 91, 188, 0.2), transparent 16rem),
+    radial-gradient(ellipse at 81% 17%, rgba(101, 193, 255, 0.19), transparent 17rem),
+    radial-gradient(ellipse at 72% 68%, rgba(255, 210, 92, 0.14), transparent 18rem),
+    radial-gradient(ellipse at 27% 82%, rgba(135, 105, 255, 0.16), transparent 16rem);
+  animation: fireworks-glow 5s ease-in-out infinite alternate;
+}
+
+@keyframes fireworks-glow {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 0.85;
+  }
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+}
+
+.aura {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
 }
 
 .segmented {
@@ -1083,6 +1222,28 @@ button.ghost {
   text-underline-offset: 3px;
 }
 
+.signature {
+  position: fixed;
+  z-index: 5;
+  right: 16px;
+  bottom: 14px;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(14px);
+}
+
+.signature:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  color: var(--text);
+}
+
 @media (max-width: 900px) {
   .page {
     width: min(100% - 36px, 720px);
@@ -1137,6 +1298,15 @@ button.ghost {
     padding: 8px 4px 2px;
     border-top: 1px solid var(--line);
     border-left: 0;
+  }
+
+  .language-toggle {
+    margin-left: auto;
+  }
+
+  .signature {
+    right: 10px;
+    bottom: 10px;
   }
 
   .segmented label {
